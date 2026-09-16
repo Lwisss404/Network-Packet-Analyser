@@ -2,6 +2,7 @@
 
 #include "capture.h"
 #include "interface.h"
+#include "parser.h"
 
 
 CaptureStatus startCapture(const char *device, const char *filter) 
@@ -56,9 +57,7 @@ CaptureStatus startCapture(const char *device, const char *filter)
 
         usleep(500000);
 
-        printf("\nPacket Number: %d", packetCount);
-        printf("\nCaptured Length(Bytes): %u", pkth->caplen);
-        printf("\nPacket Length(Bytes): %u", pkth->len);
+        parsePacket(pkth, pktd, packetCount);
     }
     pcap_close(devHandle);
     pcap_freecode(&filterProgram);

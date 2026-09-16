@@ -77,3 +77,14 @@ void errorcheckCaptureStatus(CaptureStatus status)
         default: printf("\nSuccess!"); break;
     }
 }
+
+
+void printIPv6Address(const u_char *pktd, int start) 
+{
+
+    for (int i = start; i < start + 16; i+=2) {
+        printf("%02x%02x", pktd[i], pktd[i + 1]);
+        if (i < (start + 16) - 2) { printf(":"); }
+    }
+
+}
