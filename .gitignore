@@ -56,3 +56,6 @@ dkms.conf
 
 # runtime executables
 npa
+
+# MacOS files
+.DS_Store

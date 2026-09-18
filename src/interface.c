@@ -7,11 +7,11 @@ DeviceStatus chooseDevice(char *device, size_t deviceSize)
 {
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_if_t *alldevsp;
+    pcap_if_t *alldevsp = NULL;
 
     int result = pcap_findalldevs(&alldevsp, errbuf);
 
-    if (result == PCAP_ERROR) { printf("%s", errbuf); pcap_freealldevs(alldevsp); device = NULL;; return DEVICE_ERROR; }
+    if (result == PCAP_ERROR) { printf("%s", errbuf); pcap_freealldevs(alldevsp); return DEVICE_ERROR; }
     else if (result == 0) {
         if (alldevsp == NULL) { printf("\nNo Devices Were Found!"); pcap_freealldevs(alldevsp); *device = '\0'; return NO_DEVICE; }
         else 
@@ -30,19 +30,20 @@ DeviceStatus chooseDevice(char *device, size_t deviceSize)
                 printf("\n==- Select Device: ");
                 int choiceMenu = readChoice(1, deviceCounter);
 
-                if (choiceMenu == deviceCounter) { printf("\nReturning To Previous Menu...\n"); pcap_freealldevs(alldevsp); device = NULL; return EXIT_SIG_DEV; }
+                if (choiceMenu == deviceCounter) { printf("\nReturning To Previous Menu...\n"); pcap_freealldevs(alldevsp); return EXIT_SIG_DEV; }
                 else if (!(choiceMenu < deviceCounter && choiceMenu > 0)) { printf("\nInvalid Selection... Try Again!\n"); }
                 else
                 {
                     tempdevp = alldevsp;
-                    while (choiceMenu > 1) 
+                    while (choiceMenu > 1 && tempdevp != NULL) 
                     {
                         tempdevp = tempdevp->next;
                         choiceMenu--;
                     }
+                    if (tempdevp == NULL) { pcap_freealldevs(alldevsp); return DEVICE_ERROR; }
+                    snprintf(device, deviceSize, "%s", tempdevp->name);
+                    break;
                 }
-                snprintf(device, deviceSize, "%s", tempdevp->name);
-                break;
             }
         }
     }
@@ -135,22 +136,30 @@ void buildBPF(EthernetProtocol ethProtocol, IPProtocol ipProtocol, char *filter,
         else if (ipProtocol == IP_ICMP) { snprintf(filter, filterSize, "ip and icmp"); }
         else if (ipProtocol == IP_UDP) { snprintf(filter, filterSize, "ip and udp"); }
         else if (ipProtocol == IP_TCP) { snprintf(filter, filterSize, "ip and tcp"); }
+        else { snprintf(filter, filterSize, ""); }
     }
     else if (ethProtocol == ETHERNET_IPV6) 
     {
-         if (ipProtocol == (IP_TCP | IP_UDP | IP_ICMPV6)) { snprintf(filter, filterSize, "ip6"); }
+        if (ipProtocol == (IP_TCP | IP_UDP | IP_ICMPV6)) { snprintf(filter, filterSize, "ip6"); }
         else if (ipProtocol == (IP_UDP | IP_ICMPV6)) { snprintf(filter, filterSize, "ip6 and (udp or icmp6)"); }
         else if (ipProtocol == (IP_TCP | IP_ICMPV6)) { snprintf(filter, filterSize, "ip6 and (tcp or icmp6)"); }
         else if (ipProtocol == (IP_TCP | IP_UDP)) { snprintf(filter, filterSize, "ip6 and (tcp or udp)"); }
         else if (ipProtocol == IP_ICMPV6) { snprintf(filter, filterSize, "ip6 and icmp6"); }
         else if (ipProtocol == IP_UDP) { snprintf(filter, filterSize, "ip6 and udp"); }
         else if (ipProtocol == IP_TCP) { snprintf(filter, filterSize, "ip6 and tcp"); }
+        else { snprintf(filter, filterSize, ""); }
+    }
+    else 
+    {
+        snprintf(filter, filterSize, "");
     }
 
 }
 
 int choosePacketLimit() 
 {
+
+    printf("\n");
     while (1) 
     {
         printf("\nPacket Limit Menu:"); 

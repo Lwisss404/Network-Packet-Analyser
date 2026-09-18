@@ -17,8 +17,8 @@ int main(void)
     printf("===== Network Packet Analyser =====\n");
     
 
-    EthernetProtocol ethProtocol;
-    IPProtocol ipProtocol;
+    EthernetProtocol ethProtocol = EXIT_SIG_EP;
+    IPProtocol ipProtocol = EXIT_SIG_IPP;
     char device[64];
     int running = 1;
     while (running)
@@ -80,6 +80,7 @@ int main(void)
     char filter[128];
     buildBPF(ethProtocol, ipProtocol, filter, sizeof(filter));
     printf("\nSuccess Building BPF!");
+    printf("\nDEBUG: BPF Filter: [%s]", filter);
 
     printf("\n");
 

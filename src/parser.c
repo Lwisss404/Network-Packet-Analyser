@@ -6,7 +6,7 @@
 void parsePacket(struct pcap_pkthdr *pkth, const u_char *pktd, int packetCount)  
 {
 
-    printf("\nPacket Number: %d", packetCount);
+    printf("\n\n\n==>Packet Number: %d", packetCount);
     printf("\nCaptured Length(Bytes): %u", pkth->caplen);
     printf("\nPacket Length(Bytes): %u", pkth->len);
 
@@ -24,7 +24,7 @@ void parsePacket(struct pcap_pkthdr *pkth, const u_char *pktd, int packetCount)
         printf("\nEtherType: 0x%s", buf);
         if (strcmp(buf, "0806") == 0) { printf(" ARP "); parseARP(pktd, pkth->caplen); }
         else if (strcmp(buf, "0800") == 0) { printf(" IPv4 "); parseIPv4(pktd, pkth->caplen); }
-        else if ((strcmp(buf, "86DD") == 0) || (strcmp(buf, "86dd") == 0)) { printf(" IPv6 "); }
+        else if ((strcmp(buf, "86DD") == 0) || (strcmp(buf, "86dd") == 0)) { printf(" IPv6 "); parseIPv6(pktd, pkth->caplen); }
     }
 
 }
@@ -36,10 +36,10 @@ void parseARP(const u_char *pktd, bpf_u_int32 caplen)
     printf("\n");
     printf("\n=== ARP Header ===\n");
 
-    int caplength = (int)caplen;
+    int capLength = (int)caplen;
 
     // packet bounds check
-    if (caplength < 42) { printf("\nTruncated ARP Packet."); return; }
+    if (capLength < 42) { printf("\nTruncated ARP Packet."); return; }
 
     // determining start of arp packet
     int arpStart = 14;
@@ -69,9 +69,9 @@ void parseARP(const u_char *pktd, bpf_u_int32 caplen)
     int operation = binTOdec(pktd, arpStart + 6, arpStart + 7);
     printf("\nOperation: %d", operation);
 
-    if (operation == 1) { printf("[ARP Request]\n"); }
-    else if (operation == 2) { printf("[ARP Reply]\n"); }
-    else { printf("[Unknown Operation]\n"); return; }
+    if (operation == 1) { printf(" ARP Request]\n"); }
+    else if (operation == 2) { printf(" [ARP Reply]\n"); }
+    else { printf(" [Unknown Operation]\n"); return; }
 
     // sender MAC
     printf("\nSender MAC: %02X:%02X:%02X:%02X:%02X:%02X", pktd[arpStart + 8], pktd[arpStart + 9], pktd[arpStart + 10], pktd[arpStart + 11], pktd[arpStart + 12], pktd[arpStart + 13]);
@@ -94,13 +94,13 @@ void parseIPv4(const u_char *pktd, bpf_u_int32 caplen)
     printf("\n");
     printf("\n=== IPv4 Header ===\n");
 
-    int caplength = (int)caplen;
+    int capLength = (int)caplen;
 
     // determining start of ipv4 packet
     int ipv4Start = 14;
 
     // minimum header bounds check
-    if (caplength < 34) { printf("\nTruncated IPv4 Header."); return; }
+    if (capLength < 34) { printf("\nTruncated IPv4 Header."); return; }
 
     // version check
     int version = (pktd[ipv4Start] >> 4) & 0x0F;
@@ -112,7 +112,7 @@ void parseIPv4(const u_char *pktd, bpf_u_int32 caplen)
     int ipHeaderLength = ihl * 4;
 
     // actual header bounds check
-    if (caplength < ipv4Start + ipHeaderLength) { printf("\nTruncated IPv4 Header."); return; }
+    if (capLength < ipv4Start + ipHeaderLength) { printf("\nTruncated IPv4 Header."); return; }
 
     int payloadStart = ipv4Start + ipHeaderLength;
     printf("\nPayload Start: %d", payloadStart);
@@ -130,7 +130,7 @@ void parseIPv4(const u_char *pktd, bpf_u_int32 caplen)
     if (totalLength < ipHeaderLength) { printf("\nInvalid IPv4 Total Length."); return; }
 
     // packet bounds check
-    if (caplength < ipv4Start + totalLength) { printf("\nTruncated IPv4 Packet."); return; }
+    if (capLength < ipv4Start + totalLength) { printf("\nTruncated IPv4 Packet."); return; }
 
     // identification
     int identification = binTOdec(pktd, ipv4Start + 4, ipv4Start + 5);
@@ -153,9 +153,9 @@ void parseIPv4(const u_char *pktd, bpf_u_int32 caplen)
     // protocol
     int protocol = pktd[ipv4Start + 9];
     printf("\nProtocol: %d", protocol);
-    if (protocol == 6) { printf(" TCP"); }
-    else if (protocol == 17) { printf(" UDP"); }
-    else if (protocol == 1) { printf(" ICMP"); }
+    if (protocol == 6) { printf(" (TCP)"); }
+    else if (protocol == 17) { printf(" (UDP)"); }
+    else if (protocol == 1) { printf(" (ICMP)"); }
     
     //header checksum
     int checksum = binTOdec(pktd, ipv4Start + 10, ipv4Start + 11);
@@ -194,14 +194,14 @@ void parseIPv6(const u_char *pktd, bpf_u_int32 caplen)
     printf("\n");
     printf("\n=== IPv6 Header ===\n");
 
-    int caplength = (int)caplen;
+    int capLength = (int)caplen;
 
     // determining start of ipv6 packet and payload
     int ipv6Start = 14;
     int payloadStart = ipv6Start + 40;
 
     // minimum header bounds check
-    if (caplength < ipv6Start + 40) { printf("\nTruncated IPv6 Header."); return; }
+    if (capLength < ipv6Start + 40) { printf("\nTruncated IPv6 Header."); return; }
 
     // version check
     int version = (pktd[ipv6Start] >> 4) & 0x0F;
@@ -218,10 +218,19 @@ void parseIPv6(const u_char *pktd, bpf_u_int32 caplen)
     // payload length
     int payloadLength = binTOdec(pktd, ipv6Start + 4, ipv6Start + 5);
     printf("\nPayload length: %d", payloadLength);
+    if (capLength < payloadStart + payloadLength) { printf("\nTruncated IPv6 Packet."); return; }
 
     // next header
     int nextHeader = pktd[ipv6Start + 6];
     printf("\nNext Header: %d", nextHeader);
+    switch (nextHeader)
+    {
+        case 6: printf(" (TCP)"); break;
+        case 17: printf(" (UDP)"); break; 
+        case 58: printf(" (ICMPv6)"); break;
+        case 59: printf(" (NONE)"); break;
+        default: break;
+    }
 
     // hop limit
     int hopLimit = pktd[ipv6Start + 7];
@@ -252,7 +261,8 @@ void parseIPv6(const u_char *pktd, bpf_u_int32 caplen)
     }
     else 
     {
-        printf("\nExtension Header.");
+        printf("\n\n=-Extension Header...");
+        if (parseIPv6ExtensionHeaders(pktd, payloadStart, payloadLength, nextHeader, caplen) == IPV6_EH_ERROR) { return; }
     }
 
 
